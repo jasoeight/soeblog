@@ -1,6 +1,11 @@
 <template>
     <div>
         <q-progress v-if="!init" style="height: 45px" class="indeterminate stripe"></q-progress>
+        <div v-else-if="notFound" class="card bg-negative text-white">
+            <div class="card-content">
+                {{ $t('item_not_found') }}
+            </div>
+        </div>
         <div class="card" v-else>
             <div class="toolbar">
                 <button v-if="isEdit" class="circular small" @click.prevent="showBasic = !showBasic, showLocations = false">
@@ -8,6 +13,7 @@
                     <i v-else>keyboard_arrow_up</i>
                 </button>
                 <q-toolbar-title :padding="1">{{ title }}</q-toolbar-title>
+                <button v-if="$route.params.journey && !isCopy" class="primary" @click="copy()"><i>content_copy</i> {{ $t('copy') }}</button>
             </div>
             <q-transition name="slide">
                 <div v-show="showBasic">
@@ -15,7 +21,7 @@
                         <q-select
                             :label="$t('language')"
                             type="list"
-                            v-model="journey.language"
+                            v-model="journey.lang"
                             :options="languages"
                             class="block h-form-field-margin-bottom"
                         ></q-select>
@@ -69,13 +75,13 @@
                     </div>
                 </div>
             </q-transition>
-            <div v-if="isEdit" class="toolbar">
+            <div v-if="isEdit && !isCopy" class="toolbar">
                 <button class="primary" @click.prevent="showBasic = false, showLocations = true">
                     <i class="on-left">location_on</i> {{ $t('locations') }}
                 </button>
             </div>
             <q-transition name="slide">
-                <locations v-if="isEdit && showLocations" :journey="journey"></locations>
+                <locations v-if="isEdit && !isCopy && showLocations" :journey="journey"></locations>
             </q-transition>
         </div>
     </div>
@@ -84,36 +90,33 @@
 <script>
     import Locations from './locations/List.vue';
     import FormTextarea from 'src/components/admin/form/Textarea.vue';
-    import moment from 'moment';
+    import JourneyMixin from './mixins/Journey';
     export default {
         name: 'admin-journeys-detail',
+        mixins: [ JourneyMixin ],
         components: {
             Locations,
             FormTextarea
         },
-        firebase() {
-            return {
-                journeys: {
-                    source: this.$root.$db().ref(`journeys`),
-                    cancelCallback: function () {},
-                    readyCallback: function () {
-                        this.loadJourney();
-                    }
-                }
-            };
-        },
         data() {
             return {
-                journey: {},
                 init: false,
                 showBasic: true,
                 showLocations: false,
-                isEdit: false
+                isCopy: false
             };
         },
         computed: {
             title() {
-                return this.$route.params.journey ? this.$t('journey_edit') : this.$t('journey_add');
+                if (this.$route.params.journey) {
+                    if (this.isCopy) {
+                        return this.$t('journey_copy');
+                    }
+
+                    return this.$t('journey_edit');
+                }
+
+                return this.$t('journey_add');
             },
             languages() {
                 return [
@@ -129,61 +132,41 @@
             setEndDate(value) {
                 this.journey.endDate = value;
             },
-            loadJourney() {
-                if (this.$route.params.journey) {
-                    this.$bindAsObject('journey', this.$firebaseRefs.journeys.child(this.$route.params.journey));
-                    this.isEdit = true;
-                }
-
-                this.$set(this.journey, 'createdDate', this.journey.createdDate || moment().format());
-                this.$set(this.journey, 'language', this.journey.language || 'en_US');
-                this.$set(this.journey, 'title', this.journey.title || '');
-                this.$set(this.journey, 'startDate', this.journey.startDate || '');
-                this.$set(this.journey, 'endDate', this.journey.endDate || '');
-                this.$set(this.journey, 'image', this.journey.image || '');
-                this.$set(this.journey, 'description', this.journey.description || '');
-                this.$set(this.journey, 'published', this.journey.published || false);
-                this.init = true;
-            },
             save() {
-                let journey = this.journey;
-                delete journey['.key'];
-                if (this.$route.params.journey) {
-                    this.update(journey);
+                if (this.$route.params.journey && !this.isCopy) {
+                    this.update();
                 } else {
-                    this.add(journey);
+                    this.insert();
                 }
             },
-            add(journey) {
-                this.$firebaseRefs.journeys.push(journey)
-                    .then(data => {
-                        this.$root.$toastSuccess(this.$t('item_saved_successfully'));
-                        this.$router.push({
-                            name: 'admin_journeys_detail',
-                            params: {
-                                journey: data.key
-                            }
-                        });
-                    })
-                    .catch(error => {
-                        this.$root.$toastError(error.message);
-                    });
+            copy() {
+                this.$router.push({
+                    name: 'admin_journeys_copy',
+                    params: {
+                        journey: this.$route.params.journey
+                    }
+                });
             },
-            update(journey) {
-                this.$firebaseRefs.journey.update(journey)
-                    .then(() => {
-                        this.$root.$toastSuccess(this.$t('item_saved_successfully'));
-                    })
-                    .catch(error => {
-                        this.$root.$toastError(error.message);
-                    });
+            prepareForCopy() {
+                this.isCopy = this.$route.name === 'admin_journeys_copy';
+                if (this.isCopy) {
+                    let journey = this.journey.clone();
+                    this.$set(this, 'journey', journey);
+                }
             }
         },
         watch: {
-            '$route'() {
+            async '$route'() {
                 this.init = false;
-                this.loadJourney();
+                await this.loadJourney(this.$route.params.journey);
+                this.prepareForCopy();
+                this.init = true;
             }
+        },
+        async mounted() {
+            await this.loadJourney(this.$route.params.journey);
+            this.prepareForCopy();
+            this.init = true;
         }
     };
 </script>

@@ -7,11 +7,11 @@
                 <q-popover ref="locationSelection">
                     <div class="list item-delimiter highlight">
                         <div
-                            v-for="(location, index) in locations"
+                            v-for="(location, index) in journey.getLocations()"
                             v-if="index !== '.key'"
                             :key="location['.key']"
                             class="item item-link"
-                            @click="linkToLocation(location), $refs.locationSelection.close()"
+                            @click="linkToLocation(index), $refs.locationSelection.close()"
                         >
                             <i class="item-primary"></i>
                             <div class="item-content">{{ location.name }}</div>
@@ -21,7 +21,7 @@
                             class="item item-link"
                             active-class=""
                             :to="{name: 'admin_journeys_location', params: {journey: $route.params.journey}}"
-                            @click.native="$refs.locationSelection.close()"
+                            @click="$refs.locationSelection.close()"
                         >
                             <i class="item-primary">add</i>
                             <div class="item-content">{{ $t('location_add') }}</div>
@@ -29,7 +29,7 @@
                     </div>
                 </q-popover>
             </button>
-            <button v-if="$route.params.location" class="negative" @click.prevent="$emit('delete')">
+            <button v-if="journey.hasLocation($route.params.location)" class="negative" @click.prevent="confirmDeleteLocation($route.params.location)">
                 <i>delete</i> {{ $t('location_delete') }}
             </button>
         </div>
@@ -37,12 +37,11 @@
 </template>
 
 <script>
+    import LocationMixin from '../mixins/Location';
     export default {
         name: 'admin-journeys-locations-detail-title',
+        mixins: [ LocationMixin ],
         props: {
-            locations: {
-                required: true
-            },
             journey: {
                 type: Object,
                 required: true
@@ -53,24 +52,29 @@
                 return this.$route.params.location ? this.$t('location_edit') : this.$t('location_add');
             },
             description() {
-                return `${this.journey.title} (${this.journey.language})`;
+                return `${this.journey.title} (${this.journey.lang})`;
             },
             showLocations() {
-                return this.locations['.value'] !== null;
+                return this.journey.getLocations().length > 0;
             }
         },
         methods: {
-            linkToLocation(location) {
+            linkToLocation(index) {
                 this.$router.push({
                     name: 'admin_journeys_location',
                     params: {
                         journey: this.$route.params.journey,
-                        location: location['.key']
+                        location: index
                     }
                 });
             },
-            deleteItem(item) {
-                this.$emit('delete', item);
+            deleteItemLocationSuccess() {
+                this.$router.push({
+                    name: 'admin_journeys_location',
+                    params: {
+                        journey: this.$route.params.journey
+                    }
+                });
             }
         }
     };

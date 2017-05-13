@@ -1,14 +1,11 @@
+import moment from 'moment';
+
 const schema = {
     'title': 'journey schema',
     'description': 'describes a journey entry',
     'version': 0,
     'type': 'object',
     'properties': {
-        'id': {
-            'description': 'The unique identifier for a journey',
-            'type': 'string',
-            'primary': true
-        },
         'title': {
             'type': 'string'
         },
@@ -16,20 +13,16 @@ const schema = {
             'type': 'string'
         },
         'startDate': {
-            'type': 'string',
-            'format': 'date-time'
+            'type': 'string'
         },
         'endDate': {
-            'type': 'string',
-            'format': 'date-time'
+            'type': 'string'
         },
         'createdDate': {
-            'type': 'string',
-            'format': 'date-time'
+            'type': 'string'
         },
         'image': {
-            'type': 'string',
-            'format': 'uri'
+            'type': 'string'
         },
         'lang': {
             'type': 'string',
@@ -70,8 +63,7 @@ const schema = {
                                     }
                                 },
                                 'link': {
-                                    'type': 'string',
-                                    'format': 'uri'
+                                    'type': 'string'
                                 },
                                 'mapsSearchString': {
                                     'type': 'string'
@@ -111,8 +103,7 @@ const schema = {
                                     }
                                 },
                                 'link': {
-                                    'type': 'string',
-                                    'format': 'uri'
+                                    'type': 'string'
                                 },
                                 'mapsSearchString': {
                                     'type': 'string'
@@ -149,8 +140,7 @@ const schema = {
                                     }
                                 },
                                 'link': {
-                                    'type': 'string',
-                                    'format': 'uri'
+                                    'type': 'string'
                                 },
                                 'mapsSearchString': {
                                     'type': 'string'
@@ -168,23 +158,19 @@ const schema = {
                         }
                     },
                     'startDate': {
-                        'type': 'string',
-                        'format': 'date-time'
+                        'type': 'string'
                     },
                     'endDate': {
-                        'type': 'string',
-                        'format': 'date-time'
+                        'type': 'string'
                     },
                     'createdDate': {
-                        'type': 'string',
-                        'format': 'date-time'
+                        'type': 'string'
                     },
                     'description': {
                         'type': 'string'
                     },
                     'image': {
-                        'type': 'string',
-                        'format': 'uri'
+                        'type': 'string'
                     },
                     'published': {
                         'type': 'boolean',
@@ -209,6 +195,75 @@ const schema = {
 export default {
     name: 'journeys',
     schema: schema,
-    methods: {},
+    methods: {
+        getLocations() {
+            return this.locations || [];
+        },
+        hasLocation(index) {
+            return typeof this.locations[index] !== 'undefined';
+        },
+        getLocation(index, withDefaults = false) {
+            let location = this.locations[index] || null;
+            if (!withDefaults) {
+                return location;
+            }
+
+            if (location === null) {
+                location = {};
+            }
+
+            location.createdDate = location.createdDate || moment().format();
+            location.name = location.name || '';
+            location.description = location.description || '';
+            location.startDate = location.startDate || '';
+            location.endDate = location.endDate || '';
+            location.mapsSearchString = location.mapsSearchString || '';
+            location.image = location.image || '';
+            location.maps = location.maps || {};
+            location.accommodations = location.accommodations || [];
+            location.activities = location.activities || [];
+            location.boards = location.boards || [];
+            location.published = location.published || false;
+
+            return location;
+        },
+        deleteLocation(index) {
+            if (this.hasLocation(index)) {
+                let locations = this.locations;
+                locations.splice(index, 1);
+                this.locations = locations;
+            }
+
+            return this;
+        },
+        addLocation(location) {
+            let locations = this.locations;
+            locations.push(location);
+            this.locations = locations;
+            return this;
+        },
+        updateLocation(index, location) {
+            let locations = this.locations;
+            locations[index] = location;
+            this.locations = locations;
+            return this;
+        },
+        getLastLocationIndex() {
+            return this.locations.length - 1;
+        },
+        clone() {
+            return {
+                title: this.title,
+                description: this.description,
+                startDate: this.startDate,
+                endDate: this.endDate,
+                createdDate: moment().format(),
+                image: this.image,
+                lang: this.lang,
+                published: false,
+                locations: this.locations
+            };
+        }
+    },
     sync: true
 };

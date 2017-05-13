@@ -2,7 +2,7 @@
     <detail-form
         icon="restaurant"
         :title="$t('board')"
-        :items="location.board"
+        :items="location.boards"
         :titleNew="$t('board_new')"
     ></detail-form>
 </template>

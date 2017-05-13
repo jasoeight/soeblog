@@ -9,7 +9,7 @@
                 <q-small-fab class="white" @click.native="scrollTo('activities')" icon="stars"></q-small-fab>
                 <q-small-fab class="white" @click.native="scrollTo('board')" icon="restaurant"></q-small-fab>
             </q-fab>
-            <detail-title :locations="locations" :journey="journey" @delete="confirmDelete"></detail-title>
+            <detail-title :journey="journey"></detail-title>
             <detail-basic ref="basic" :location="location"></detail-basic>
             <detail-maps ref="map" :location="location"></detail-maps>
             <detail-accommodations ref="accommodation" :location="location"></detail-accommodations>
@@ -28,16 +28,17 @@
 </template>
 
 <script>
-    import moment from 'moment';
     import DetailTitle from './DetailTitle.vue';
     import DetailBasic from './DetailBasic.vue';
     import DetailMaps from './DetailMaps.vue';
     import DetailAccommodations from './DetailAccommodations.vue';
     import DetailActivities from './DetailActivities.vue';
     import DetailBoard from './DetailBoard.vue';
+    import JourneyMixin from '../mixins/Journey';
 
     export default {
         name: 'admin-journeys-locations-detail',
+        mixins: [ JourneyMixin ],
         components: {
             DetailTitle,
             DetailBasic,
@@ -46,24 +47,12 @@
             DetailActivities,
             DetailBoard
         },
-        firebase() {
-            return {
-                journey: {
-                    source: this.$root.$db().ref(`journeys/${this.$route.params.journey}`),
-                    asObject: true
-                },
-                locations: {
-                    source: this.$root.$db().ref(`journeys/${this.$route.params.journey}/locations`),
-                    readyCallback: function () {
-                        this.loadLocation();
-                    }
-                }
-            };
-        },
         data() {
             return {
                 location: {},
-                init: false
+                init: false,
+                notFound: false,
+                isEdit: false
             };
         },
         computed: {
@@ -80,46 +69,22 @@
                     container.scrollIntoView();
                 }
             },
-            loadLocation() {
-                this.location = {};
-                if (this.locationIndex) {
-                    this.$bindAsObject('location', this.$firebaseRefs.locations.child(this.locationIndex));
-                }
-
-                this.$set(this.location, 'createdDate', this.location.createdDate || moment().format());
-                this.$set(this.location, 'name', this.location.name || '');
-                this.$set(this.location, 'description', this.location.description || '');
-                this.$set(this.location, 'startDate', this.location.startDate || '');
-                this.$set(this.location, 'endDate', this.location.endDate || '');
-                this.$set(this.location, 'mapsSearchString', this.location.mapsSearchString || '');
-                this.$set(this.location, 'maps', this.location.maps || {});
-                this.$set(this.location, 'accommodations', this.location.accommodations || []);
-                this.$set(this.location, 'activities', this.location.activities || []);
-                this.$set(this.location, 'board', this.location.board || []);
-                this.$set(this.location, 'image', this.location.image || '');
-                this.$set(this.location, 'published', this.location.published || false);
-                this.init = true;
-            },
             save() {
-                let location = this.location;
-                delete location['.key'];
-                delete location['.value'];
-
-                if (this.locationIndex) {
-                    this.update(location);
+                if (typeof this.locationIndex !== 'undefined') {
+                    this.update();
                 } else {
-                    this.add(location);
+                    this.add();
                 }
             },
-            add(location) {
-                this.$firebaseRefs.locations.push(location)
-                    .then(data => {
+            add() {
+                this.journey.addLocation(this.location).save()
+                    .then(() => {
                         this.$root.$toastSuccess(this.$t('item_saved_successfully'));
                         this.$router.push({
                             name: 'admin_journeys_location',
                             params: {
                                 journey: this.$route.params.journey,
-                                location: data.key
+                                location: this.journey.getLastLocationIndex()
                             }
                         });
                     })
@@ -127,8 +92,8 @@
                         this.$root.$toastError(error.message);
                     });
             },
-            update(location) {
-                this.$firebaseRefs.location.update(location)
+            update(index, location) {
+                this.journey.updateLocation(this.locationIndex, this.location).save()
                     .then(() => {
                         this.$root.$toastSuccess(this.$t('item_saved_successfully'));
                     })
@@ -136,32 +101,24 @@
                         this.$root.$toastError(error.message);
                     });
             },
-            confirmDelete(item) {
-                this.$root.$deleteDialog(this.location.name, this.location, this.deleteItem);
-            },
-            deleteItem(item) {
+            async loadLocation() {
                 this.init = false;
-                this.$firebaseRefs.locations.child(item['.key']).remove()
-                    .then(() => {
-                        this.$root.$toastSuccess(this.$t('delete_item_successfully'));
-                        this.$router.push({
-                            name: 'admin_journeys_location',
-                            params: {
-                                journey: this.$route.params.journey
-                            }
-                        });
-                    })
-                    .catch(error => {
-                        this.init = true;
-                        this.$root.$toastError(error.message);
-                    });
+                await this.loadJourney(this.$route.params.journey);
+                if (this.locationIndex && !this.journey.hasLocation(this.locationIndex)) {
+                    this.notFound = true;
+                    this.init = true;
+                    return;
+                }
+
+                this.location = this.journey.getLocation(this.locationIndex, true);
+                this.init = true;
             }
         },
         watch: {
-            '$route'() {
-                this.init = false;
-                this.loadLocation();
-            }
+            '$route': 'loadLocation'
+        },
+        mounted() {
+            this.loadLocation();
         }
     };
 </script>

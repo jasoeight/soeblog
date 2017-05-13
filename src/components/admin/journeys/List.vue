@@ -18,8 +18,8 @@
                 <template slot="col-published" scope="cell">
                     <q-toggle class="primary" :value="cell.data" @input="confirmTogglePublish(cell, $event)"></q-toggle>
                 </template>
-                <template slot="col-.key" scope="cell">
-                    <router-link tag="button" class="primary small" :to="{ name: 'admin_journeys_detail', params: { journey: cell.data } }">
+                <template slot="col-actions" scope="cell">
+                    <router-link tag="button" class="primary small" :to="{ name: 'admin_journeys_detail', params: { journey: cell.row._id } }">
                         <i>edit</i>
                         <q-tooltip>{{ $t('detail_view') }}</q-tooltip>
                     </router-link>
@@ -34,18 +34,12 @@
 </template>
 
 <script>
-
+    import * as Database from 'src/database';
     export default {
         name: 'admin-journeys-list',
-        firebase() {
+        data() {
             return {
-                journeys: {
-                    source: this.$root.$db().ref('journeys'),
-                    cancelCallback: function () {},
-                    readyCallback: function () {
-                        this.load();
-                    }
-                }
+                journeys: []
             };
         },
         computed: {
@@ -83,7 +77,7 @@
             columns() {
                 return [
                     { label: this.$t('published'), field: 'published', sort: true, filter: true, width: '100px' },
-                    { label: this.$t('language'), field: 'language', sort: true, filter: true },
+                    { label: this.$t('language'), field: 'lang', sort: true, filter: true },
                     { label: this.$t('title'), field: 'title', sort: true, filter: true },
                     {
                         label: this.$t('start_date'),
@@ -99,7 +93,7 @@
                         filter: true,
                         format: (value, row) => new Date(value).toLocaleDateString()
                     },
-                    { label: '', field: '.key', width: '100px', classes: 'text-right' },
+                    { label: '', field: 'actions', width: '100px', classes: 'text-right' },
                 ];
             }
         },
@@ -113,16 +107,19 @@
             confirmTogglePublish(item, value) {
                 this.$root.$publishDialog(item.row.title, item, value, this.togglePublish);
             },
-            togglePublish(item, value) {
-                this.$firebaseRefs.journeys.child(item.row['.key']).update({
-                    published: value
-                });
+            async togglePublish(item, value) {
+                const db = await Database.get();
+                const journey = await db.journeys.findOne({'_id': {$eq: item.row._id}}).exec();
+                journey.published = value;
+                await journey.save();
             },
             confirmDelete(item) {
                 this.$root.$deleteDialog(item.row.title, item, this.deleteItem);
             },
-            deleteItem(item) {
-                this.$firebaseRefs.journeys.child(item.row['.key']).remove()
+            async deleteItem(item) {
+                const db = await Database.get();
+                const journey = await db.journeys.findOne({'_id': {$eq: item.row._id}}).exec();
+                journey.remove()
                     .then(() => {
                         this.$root.$toastSuccess(this.$t('delete_item_successfully'));
                     })
@@ -130,6 +127,14 @@
                         this.$root.$toastError(error.message);
                     });
             }
+        },
+        async mounted() {
+            const db = await Database.get();
+            db.journeys
+                .find().$
+                .subscribe(documents => {
+                    this.journeys = documents;
+                });
         }
     };
 </script>

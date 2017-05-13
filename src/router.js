@@ -47,6 +47,11 @@ export default new VueRouter({
                             component: load('admin/journeys/Detail')
                         },
                         {
+                            path: 'detail/:journey/copy',
+                            name: 'admin_journeys_copy',
+                            component: load('admin/journeys/Detail')
+                        },
+                        {
                             path: 'detail/:journey/location/:location?',
                             name: 'admin_journeys_location',
                             component: load('admin/journeys/locations/Detail')
