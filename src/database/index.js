@@ -6,7 +6,7 @@ RxDB.plugin(require('pouchdb-adapter-idb'));
 RxDB.plugin(require('pouchdb-adapter-http')); // enable syncing over http
 RxDB.plugin(require('pouchdb-replication')); // enable syncing
 
-const syncURL = 'http://localhost:5984/blog-';
+// const syncURL = 'http://localhost:5984/blog-';
 
 const _create = async function() {
     const db = await RxDB.create({
@@ -22,11 +22,12 @@ const _create = async function() {
     );
 
     // sync
+    /*
     collections
         .filter(col => col.sync)
         .map(col => col.name)
         .map(colName => db[colName].sync(syncURL + colName + '/'));
-
+    */
     return db;
 };
 

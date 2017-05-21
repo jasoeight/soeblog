@@ -1,4 +1,4 @@
-import nominatim from 'nominatim-client';
+import nominatim from './nominatim-client';
 
 nominatim.global({
     useragent: 'SoeBlog',
