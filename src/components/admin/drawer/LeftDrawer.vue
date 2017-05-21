@@ -1,5 +1,6 @@
 <template>
     <q-drawer ref="drawer">
+        <!--
         <div class="profile bg-primary">
             <span class="chip label">
                 <img v-if="$store.getters['user/get'].photoURL" :src="$store.getters['user/get'].photoURL">
@@ -20,6 +21,7 @@
                 </button>
             </div>
         </div>
+        -->
         <navigation :links="links"></navigation>
     </q-drawer>
 </template>

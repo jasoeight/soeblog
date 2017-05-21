@@ -2,7 +2,9 @@
     <detail-form
         icon="star"
         :title="$t('activities')"
-        :items="location.activities"
+        :location="location"
+        :locationRxdb="locationRxdb"
+        listKey="activities"
         :titleNew="$t('activity_new')"
     ></detail-form>
 </template>
@@ -17,6 +19,10 @@
         },
         props: {
             location: {
+                type: Object,
+                required: true
+            },
+            locationRxdb: {
                 type: Object,
                 required: true
             }

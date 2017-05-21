@@ -7,13 +7,12 @@
                 <q-popover ref="locationSelection">
                     <div class="list item-delimiter highlight">
                         <div
-                            v-for="(location, index) in journey.getLocations()"
-                            v-if="index !== '.key'"
-                            :key="location['.key']"
+                            v-for="location in locations"
+                            :key="location._id"
                             class="item item-link"
-                            @click="linkToLocation(index), $refs.locationSelection.close()"
+                            @click="linkToLocation(location), $refs.locationSelection.close()"
                         >
-                            <i class="item-primary"></i>
+                            <i class="item-primary">{{ locationRxdb._id === location._id ? 'check_circle' : '' }}</i>
                             <div class="item-content">{{ location.name }}</div>
                         </div>
                         <router-link
@@ -29,7 +28,11 @@
                     </div>
                 </q-popover>
             </button>
-            <button v-if="journey.hasLocation($route.params.location)" class="negative" @click.prevent="confirmDeleteLocation($route.params.location)">
+            <button
+                v-if="$route.params.location && journey.hasLocation($route.params.location)"
+                class="negative"
+                @click.prevent="confirmDeleteLocation(locationRxdb)"
+            >
                 <i>delete</i> {{ $t('location_delete') }}
             </button>
         </div>
@@ -37,7 +40,7 @@
 </template>
 
 <script>
-    import LocationMixin from '../mixins/Location';
+    import LocationMixin from 'src/mixins/location';
     export default {
         name: 'admin-journeys-locations-detail-title',
         mixins: [ LocationMixin ],
@@ -45,7 +48,16 @@
             journey: {
                 type: Object,
                 required: true
+            },
+            locationRxdb: {
+                type: Object,
+                required: true
             }
+        },
+        data() {
+            return {
+                locations: []
+            };
         },
         computed: {
             title() {
@@ -55,16 +67,16 @@
                 return `${this.journey.title} (${this.journey.lang})`;
             },
             showLocations() {
-                return this.journey.getLocations().length > 0;
+                return this.journey.hasLocations();
             }
         },
         methods: {
-            linkToLocation(index) {
+            linkToLocation(location) {
                 this.$router.push({
                     name: 'admin_journeys_location',
                     params: {
                         journey: this.$route.params.journey,
-                        location: index
+                        location: location._id
                     }
                 });
             },
@@ -75,7 +87,13 @@
                         journey: this.$route.params.journey
                     }
                 });
+            },
+            async loadLocations() {
+                this.locations = await this.journey.locations_;
             }
+        },
+        mounted() {
+            this.loadLocations();
         }
     };
 </script>

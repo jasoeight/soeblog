@@ -4,6 +4,10 @@
             <input v-model="location.name" type="text" class="full-width">
             <label>{{ $t('name') }}</label>
         </div>
+        <div class="stacked-label h-form-field-margin-bottom">
+            <textarea v-model="location.teaser" class="full-width"></textarea>
+            <label>{{ $t('teaser') }}</label>
+        </div>
         <form-textarea :label="$t('description')" v-model="location.description"></form-textarea>
         <div class="row">
             <q-datetime

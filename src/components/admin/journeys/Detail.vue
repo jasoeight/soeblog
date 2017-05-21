@@ -29,6 +29,8 @@
                             <input class="full-width" v-model="journey.title">
                             <label>{{ $t('title') }}</label>
                         </div>
+                        <form-textarea :label="$t('short_teaser')" v-model="journey.shortTeaser"></form-textarea>
+                        <form-textarea :label="$t('long_teaser')" v-model="journey.longTeaser"></form-textarea>
                         <form-textarea :label="$t('description')" v-model="journey.description"></form-textarea>
                         <div class="row">
                             <q-datetime
@@ -90,7 +92,7 @@
 <script>
     import Locations from './locations/List.vue';
     import FormTextarea from 'src/components/admin/form/Textarea.vue';
-    import JourneyMixin from './mixins/Journey';
+    import JourneyMixin from 'src/mixins/journey';
     export default {
         name: 'admin-journeys-detail',
         mixins: [ JourneyMixin ],
@@ -102,8 +104,7 @@
             return {
                 init: false,
                 showBasic: true,
-                showLocations: false,
-                isCopy: false
+                showLocations: false
             };
         },
         computed: {
@@ -123,6 +124,9 @@
                     { label: this.$t('english'), value: 'en_US' },
                     { label: this.$t('german'), value: 'de_DE' }
                 ];
+            },
+            isCopy() {
+                return this.$route.name === 'admin_journeys_copy';
             }
         },
         methods: {
@@ -133,11 +137,21 @@
                 this.journey.endDate = value;
             },
             save() {
-                if (this.$route.params.journey && !this.isCopy) {
-                    this.update();
-                } else {
-                    this.insert();
-                }
+                this.journey.save()
+                    .then(() => {
+                        this.$root.$toastSuccess(this.$t('item_saved_successfully'));
+                        if (!this.$route.params.journey || this.isCopy) {
+                            this.$router.push({
+                                name: 'admin_journeys_detail',
+                                params: {
+                                    journey: this.journey._id
+                                }
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        this.$root.$toastError(error.message);
+                    });
             },
             copy() {
                 this.$router.push({
@@ -146,26 +160,17 @@
                         journey: this.$route.params.journey
                     }
                 });
-            },
-            prepareForCopy() {
-                this.isCopy = this.$route.name === 'admin_journeys_copy';
-                if (this.isCopy) {
-                    let journey = this.journey.clone();
-                    this.$set(this, 'journey', journey);
-                }
             }
         },
         watch: {
             async '$route'() {
                 this.init = false;
-                await this.loadJourney(this.$route.params.journey);
-                this.prepareForCopy();
+                await this.loadJourney(this.$route.params.journey, this.isCopy);
                 this.init = true;
             }
         },
         async mounted() {
-            await this.loadJourney(this.$route.params.journey);
-            this.prepareForCopy();
+            await this.loadJourney(this.$route.params.journey, this.isCopy);
             this.init = true;
         }
     };

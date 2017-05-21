@@ -6,14 +6,14 @@
                     <i class="item-primary">location_city</i>
                     <q-toolbar-title :padding="1">{{ location.name }}</q-toolbar-title>
                     <router-link
-                        :to="{ name: 'admin_journeys_location', params: { journey: journey._id, location: index } }"
+                        :to="{ name: 'admin_journeys_location', params: { journey: journey._id, location: location._id } }"
                         tag="button"
                         class="primary text-white small"
                     >
                         <i>edit</i>
                         <q-tooltip>{{ $t('detail_view') }}</q-tooltip>
                     </router-link>
-                    <button class="negative text-white small" @click.prevent="confirmDeleteLocation(index)">
+                    <button class="negative text-white small" @click.prevent="confirmDeleteLocation(location)">
                         <i>delete</i>
                         <q-tooltip>{{ $t('delete_item') }}</q-tooltip>
                     </button>
@@ -29,7 +29,7 @@
 </template>
 
 <script>
-    import LocationMixin from '../mixins/Location';
+    import LocationMixin from 'src/mixins/location';
     export default {
         name: 'admin-journeys-locations-list',
         mixins: [ LocationMixin ],
@@ -39,10 +39,18 @@
                 required: true
             }
         },
-        computed: {
-            locations() {
-                return this.journey.getLocations();
+        data() {
+            return {
+                locations: []
+            };
+        },
+        methods: {
+            async loadLocations() {
+                this.locations = await this.journey.locations_;
             }
+        },
+        mounted() {
+            this.loadLocations();
         }
     };
 </script>

@@ -113,6 +113,18 @@
             FormTextarea
         },
         props: {
+            location: {
+                type: Object,
+                required: true
+            },
+            locationRxdb: {
+                type: Object,
+                required: true
+            },
+            listKey: {
+                type: String,
+                required: true
+            },
             icon: {
                 type: String,
                 required: true
@@ -124,13 +136,6 @@
             titleNew: {
                 type: String,
                 required: true
-            },
-            items: {
-                type: Array,
-                required: true
-            },
-            additionalParamsCallback: {
-                type: Function
             }
         },
         data() {
@@ -140,23 +145,17 @@
                 rows: 2
             };
         },
+        computed: {
+            items() {
+                return this.location[this.listKey];
+            }
+        },
         methods: {
             add() {
-                let params = {
-                    name: '',
-                    price: 0,
-                    description: '',
-                    link: '',
-                    mapsSearchString: '',
-                    maps: {},
-                    images: []
-                };
-
-                if (this.additionalParamsCallback) {
-                    params = this.additionalParamsCallback(params);
-                }
-
-                this.items.push(params);
+                const key = this.listKey.charAt(0).toUpperCase() + this.listKey.slice(1);
+                const items = this.items;
+                items.push(this.locationRxdb[`get${key}Item`]());
+                this.location[this.listKey] = items;
                 this.addMap();
                 this.$set(this.showStates, this.showStates.length, true);
             },

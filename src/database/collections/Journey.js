@@ -1,4 +1,9 @@
 import moment from 'moment';
+import marked from 'marked';
+import { Utils } from 'quasar';
+
+const LANGUAGE_DEFAULT = 'de_DE';
+const PUBLISHED_DEFAULT = false;
 
 const schema = {
     'title': 'journey schema',
@@ -7,6 +12,12 @@ const schema = {
     'type': 'object',
     'properties': {
         'title': {
+            'type': 'string'
+        },
+        'shortTeaser': {
+            'type': 'string'
+        },
+        'longTeaser': {
             'type': 'string'
         },
         'description': {
@@ -26,166 +37,18 @@ const schema = {
         },
         'lang': {
             'type': 'string',
-            'default': 'de_DE',
+            'default': LANGUAGE_DEFAULT,
             'index': true
         },
         'published': {
             'type': 'boolean',
-            'default': false
+            'default': PUBLISHED_DEFAULT
         },
         'locations': {
             'type': 'array',
-            'item': {
-                'type': 'object',
-                'properties': {
-                    'accommodations': {
-                        'type': 'array',
-                        'item': {
-                            'type': 'object',
-                            'properties': {
-                                'description': {
-                                    'type': 'string'
-                                },
-                                'duration': {
-                                    'type': 'number',
-                                    'default': 0,
-                                    'min': 0
-                                },
-                                'images': {
-                                    'type': 'array',
-                                    'item': {
-                                        'type': 'object',
-                                        'properties': {
-                                            'link': {
-                                                'type': 'string'
-                                            }
-                                        }
-                                    }
-                                },
-                                'link': {
-                                    'type': 'string'
-                                },
-                                'mapsSearchString': {
-                                    'type': 'string'
-                                },
-                                'name': {
-                                    'type': 'string'
-                                },
-                                'price': {
-                                    'type': 'number'
-                                },
-                                'type': {
-                                    'type': 'string'
-                                },
-                                'maps': {
-                                    'type': 'object'
-                                }
-                            }
-                        }
-                    },
-                    'activities': {
-                        'type': 'array',
-                        'item': {
-                            'type': 'object',
-                            'properties': {
-                                'description': {
-                                    'type': 'string'
-                                },
-                                'images': {
-                                    'type': 'array',
-                                    'item': {
-                                        'type': 'object',
-                                        'properties': {
-                                            'link': {
-                                                'type': 'string'
-                                            }
-                                        }
-                                    }
-                                },
-                                'link': {
-                                    'type': 'string'
-                                },
-                                'mapsSearchString': {
-                                    'type': 'string'
-                                },
-                                'name': {
-                                    'type': 'string'
-                                },
-                                'price': {
-                                    'type': 'number'
-                                },
-                                'maps': {
-                                    'type': 'object'
-                                }
-                            }
-                        }
-                    },
-                    'boards': {
-                        'type': 'array',
-                        'item': {
-                            'type': 'object',
-                            'properties': {
-                                'description': {
-                                    'type': 'string'
-                                },
-                                'images': {
-                                    'type': 'array',
-                                    'item': {
-                                        'type': 'object',
-                                        'properties': {
-                                            'link': {
-                                                'type': 'string'
-                                            }
-                                        }
-                                    }
-                                },
-                                'link': {
-                                    'type': 'string'
-                                },
-                                'mapsSearchString': {
-                                    'type': 'string'
-                                },
-                                'name': {
-                                    'type': 'string'
-                                },
-                                'price': {
-                                    'type': 'number'
-                                },
-                                'maps': {
-                                    'type': 'object'
-                                }
-                            }
-                        }
-                    },
-                    'startDate': {
-                        'type': 'string'
-                    },
-                    'endDate': {
-                        'type': 'string'
-                    },
-                    'createdDate': {
-                        'type': 'string'
-                    },
-                    'description': {
-                        'type': 'string'
-                    },
-                    'image': {
-                        'type': 'string'
-                    },
-                    'published': {
-                        'type': 'boolean',
-                        'default': false
-                    },
-                    'mapsSearchString': {
-                        'type': 'string'
-                    },
-                    'name': {
-                        'type': 'string'
-                    },
-                    'maps': {
-                        'type': 'object'
-                    }
-                }
+            'ref': 'location',
+            'items': {
+                'type': 'string'
             }
         }
     },
@@ -193,42 +56,58 @@ const schema = {
 };
 
 export default {
-    name: 'journeys',
+    name: 'journey',
     schema: schema,
+    statics: {
+        getNewInstance(data = {}) {
+            return this._createDocument(Object.assign(
+                {
+                    _id: Utils.uid(),
+                    published: PUBLISHED_DEFAULT,
+                    title: '',
+                    shortTeaser: '',
+                    longTeaser: '',
+                    description: '',
+                    startDate: '',
+                    endDate: '',
+                    createdDate: moment().format(),
+                    image: '',
+                    lang: LANGUAGE_DEFAULT,
+                    locations: []
+                },
+                data
+            ));
+        },
+        async findById(id) {
+            return await this.findOne({'_id': {$eq: id}}).exec();
+        }
+    },
     methods: {
+        hasLocations() {
+            return this.getLocations().length > 0;
+        },
         getLocations() {
             return this.locations || [];
         },
-        hasLocation(index) {
-            return typeof this.locations[index] !== 'undefined';
-        },
-        getLocation(index, withDefaults = false) {
-            let location = this.locations[index] || null;
-            if (!withDefaults) {
-                return location;
+        getLocation(id) {
+            if (id && this.hasLocation(id)) {
+                return this.collection.database.location.findById(id);
             }
 
-            if (location === null) {
-                location = {};
-            }
-
-            location.createdDate = location.createdDate || moment().format();
-            location.name = location.name || '';
-            location.description = location.description || '';
-            location.startDate = location.startDate || '';
-            location.endDate = location.endDate || '';
-            location.mapsSearchString = location.mapsSearchString || '';
-            location.image = location.image || '';
-            location.maps = location.maps || {};
-            location.accommodations = location.accommodations || [];
-            location.activities = location.activities || [];
-            location.boards = location.boards || [];
-            location.published = location.published || false;
-
-            return location;
+            return this.collection.database.location.getNewInstance();
         },
-        deleteLocation(index) {
-            if (this.hasLocation(index)) {
+        addLocation(location) {
+            let locations = this.locations;
+            locations.push(location._id);
+            this.locations = locations;
+            return this;
+        },
+        hasLocation(id) {
+            return this.locations.indexOf(id) !== -1;
+        },
+        deleteLocation(id) {
+            if (this.hasLocation(id)) {
+                const index = this.locations.indexOf(id);
                 let locations = this.locations;
                 locations.splice(index, 1);
                 this.locations = locations;
@@ -236,33 +115,27 @@ export default {
 
             return this;
         },
-        addLocation(location) {
-            let locations = this.locations;
-            locations.push(location);
-            this.locations = locations;
-            return this;
-        },
-        updateLocation(index, location) {
-            let locations = this.locations;
-            locations[index] = location;
-            this.locations = locations;
-            return this;
-        },
-        getLastLocationIndex() {
-            return this.locations.length - 1;
-        },
-        clone() {
+        getCloneData() {
             return {
                 title: this.title,
+                shortTeaser: this.shortTeaser,
                 description: this.description,
+                longTeaser: this.longTeaser,
                 startDate: this.startDate,
                 endDate: this.endDate,
-                createdDate: moment().format(),
                 image: this.image,
                 lang: this.lang,
-                published: false,
                 locations: this.locations
             };
+        },
+        getShortTeaser() {
+            return marked(this.shortTeaser, { sanitize: true });
+        },
+        getLongTeaser() {
+            return marked(this.longTeaser, { sanitize: true });
+        },
+        getDescription() {
+            return marked(this.description, { sanitize: true });
         }
     },
     sync: true

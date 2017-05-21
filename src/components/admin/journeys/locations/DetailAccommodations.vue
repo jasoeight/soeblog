@@ -2,9 +2,10 @@
     <detail-form
         icon="hotel"
         :title="$t('accommodations')"
-        :items="location.accommodations"
+        :location="location"
+        :locationRxdb="locationRxdb"
+        listKey="accommodations"
         :titleNew="$t('accommodation_new')"
-        :additionalParamsCallback="addParams"
     >
         <template slot="fields-top" scope="props">
             <div class="row medium-gutter">
@@ -40,6 +41,10 @@
             location: {
                 type: Object,
                 required: true
+            },
+            locationRxdb: {
+                type: Object,
+                required: true
             }
         },
         computed: {
@@ -49,13 +54,6 @@
                     { label: this.$t('hotel'), value: 'hotel' },
                     { label: this.$t('motel'), value: 'motel' }
                 ];
-            }
-        },
-        methods: {
-            addParams(params) {
-                params.type = '';
-                params.duration = 0;
-                return params;
             }
         }
     };

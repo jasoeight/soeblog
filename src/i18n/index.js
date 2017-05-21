@@ -10,8 +10,8 @@ const i18n = new VueI18n({
         'de_DE': messagesDeDe,
         'en_US': messagesEnUs
     },
-    locale: 'en_US',
-    fallbackLang: 'en_US'
+    locale: 'de_DE',
+    fallbackLang: 'de_DE'
 });
 
 const i18nMixin = {

@@ -21,6 +21,8 @@ export default new VueRouter({
      */
     routes: [
         { path: '/', name: 'home', component: load('frontend/Index') },
+        { path: '/journey/:journey', name: 'journey', component: load('frontend/Journey') },
+        { path: '/journey/:journey/location/:location', name: 'location', component: load('frontend/Location') },
         { path: '/login', name: 'login', component: load('authentication/Login') },
         {
             path: '/admin',

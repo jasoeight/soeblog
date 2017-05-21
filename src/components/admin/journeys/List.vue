@@ -12,7 +12,6 @@
                 :data="items"
                 :config="config"
                 :columns="columns"
-                @refresh="load"
                 class="no-border"
             >
                 <template slot="col-published" scope="cell">
@@ -45,7 +44,7 @@
         computed: {
             config() {
                 return {
-                    refresh: true,
+                    refresh: false,
                     columnPicker: true,
                     responsive: true,
                     pagination: {
@@ -98,18 +97,12 @@
             }
         },
         methods: {
-            load(done) {
-                this.$bindAsArray('journeys', this.$firebaseRefs.journeys);
-                if (done) {
-                    done();
-                }
-            },
             confirmTogglePublish(item, value) {
                 this.$root.$publishDialog(item.row.title, item, value, this.togglePublish);
             },
             async togglePublish(item, value) {
                 const db = await Database.get();
-                const journey = await db.journeys.findOne({'_id': {$eq: item.row._id}}).exec();
+                const journey = await db.journey.findById(item.row._id);
                 journey.published = value;
                 await journey.save();
             },
@@ -118,7 +111,13 @@
             },
             async deleteItem(item) {
                 const db = await Database.get();
-                const journey = await db.journeys.findOne({'_id': {$eq: item.row._id}}).exec();
+                const journey = await db.journey.findById(item.row._id);
+                const locations = await journey.locations_;
+
+                locations.forEach(async (location) => {
+                    await location.remove();
+                });
+
                 journey.remove()
                     .then(() => {
                         this.$root.$toastSuccess(this.$t('delete_item_successfully'));
@@ -130,7 +129,7 @@
         },
         async mounted() {
             const db = await Database.get();
-            db.journeys
+            db.journey
                 .find().$
                 .subscribe(documents => {
                     this.journeys = documents;

@@ -10,22 +10,21 @@ import Vue from 'vue';
 import Quasar from 'quasar';
 import router from './router';
 import store from './store';
-import dbMixin from './firebase/setup';
 import { i18n, i18nMixin } from './i18n';
 import { dialogMixin, toastMixin } from './mixins';
 import VueLayers from 'vuelayers';
+import * as Database from './database';
 
 Vue.use(Quasar); // Install Quasar Framework
 Vue.use(VueLayers);
 
-import './database';
+Database.get();
 
 Quasar.start(() => {
     /* eslint-disable no-new */
     new Vue({
         el: '#q-app',
         mixins: [
-            dbMixin,
             dialogMixin,
             i18nMixin,
             toastMixin

@@ -1,5 +1,6 @@
 <template>
-    <q-layout v-if="$store.getters['user/isAuthenticated']">
+    <!--<q-layout v-if="$store.getters['user/isAuthenticated']">-->
+    <q-layout>
         <div slot="header" class="toolbar">
             <button class="hide-on-drawer-visible" @click="$refs.navigation.$refs.drawer.open()">
                 <i>menu</i>
@@ -25,9 +26,11 @@
             Language
         },
         created() {
+            /*
             if (!this.$store.getters['user/isAuthenticated']) {
                 this.$router.push({ name: 'login' });
             }
+            */
         }
     };
 </script>

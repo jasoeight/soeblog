@@ -1,9 +1,9 @@
 <template>
-    <div class="layout-padding">
+    <div class="layout-padding small-content">
         <h2 class="text-primary">{{ $t('journeys') }}</h2>
         <div>
-            <div class="row medium-gutter">
-                <journey v-for="journey in journeys" :key="journey.__key" :journey="journey"></journey>
+            <div class="row medium-gutter items-stretch wrap">
+                <journey v-for="journey in journeys" :key="journey._id" :journey="journey"></journey>
             </div>
         </div>
     </div>
@@ -11,24 +11,28 @@
 
 <script>
     import Journey from './Journey.vue';
+    import * as Database from 'src/database';
+
     export default {
         name: 'frontend-home-journeys',
         components: {
             Journey
         },
-        firebase() {
+        data() {
             return {
-                journeys: {
-                    source: this.$root.$db().ref('journeys'),
-                    readyCallback: this.load
-                }
+                journeys: []
             };
         },
-        methods: {
-            load() {
-                this.$firebaseRefs.journeys.orderByChild('language').equalTo(this.$store.getters['user/language']);
-                this.$bindAsArray('journeys', this.$firebaseRefs.journeys.limitToLast(6));
-            }
+        async mounted() {
+            const db = await Database.get();
+            db.journey
+                .find({
+                    lang: {$eq: this.$store.getters['user/language']},
+                    published: true
+                }).$
+                .subscribe(documents => {
+                    this.journeys = documents;
+                });
         }
     };
 </script>
